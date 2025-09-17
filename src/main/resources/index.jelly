@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<div>
+    <p>
+        Upload build artifacts to Buildstash web service. This plugin provides both Pipeline and Freestyle project support.
+    </p>
+    <p>
+        <strong>Pipeline Usage:</strong><br/>
+        <code>buildstash apiKey: 'your-api-key', primaryFilePath: 'path/to/file', ...</code>
+    </p>
+    <p>
+        <strong>Freestyle Usage:</strong><br/>
+        Add "Upload to Buildstash" build step in your project configuration.
+    </p>
+</div> 
