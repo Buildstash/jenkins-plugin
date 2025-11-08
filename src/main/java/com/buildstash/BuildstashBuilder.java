@@ -146,7 +146,8 @@ public class BuildstashBuilder extends Publisher implements SimpleBuildStep {
         request.setCiPipeline(build.getParent().getDisplayName());
         request.setCiRunId(String.valueOf(build.getNumber()));
         request.setCiRunUrl(getBuildUrl(build));
-        request.setCiBuildDuration(formatBuildDuration(build.getDuration()));
+        request.setCiPipelineUrl(getProjectUrl(build));
+        request.setCiBuildDuration(formatBuildDuration(getBuildDuration(build)));
         request.setSource("jenkins");
 
         // Set version control information
@@ -184,6 +185,44 @@ public class BuildstashBuilder extends Publisher implements SimpleBuildStep {
         }
         // Fallback to relative URL if root URL is not available
         return build.getUrl();
+    }
+
+    /**
+     * Gets the full URL to the Jenkins project/job root.
+     */
+    private String getProjectUrl(Run<?, ?> build) {
+        Jenkins jenkins = Jenkins.getInstanceOrNull();
+        if (jenkins != null) {
+            String rootUrl = jenkins.getRootUrl();
+            if (rootUrl != null && !rootUrl.isEmpty()) {
+                // Remove trailing slash from root URL if present
+                String baseUrl = rootUrl.endsWith("/") ? rootUrl.substring(0, rootUrl.length() - 1) : rootUrl;
+                String projectPath = build.getParent().getUrl();
+                // Ensure project path starts with / if it doesn't already
+                if (!projectPath.startsWith("/")) {
+                    projectPath = "/" + projectPath;
+                }
+                return baseUrl + projectPath;
+            }
+        }
+        // Fallback to relative URL if root URL is not available
+        return build.getParent().getUrl();
+    }
+
+    /**
+     * Gets the build duration in milliseconds.
+     * If the build is still running or duration is 0, calculates duration from start time to now.
+     * If the build is completed with a valid duration, returns that duration.
+     */
+    private long getBuildDuration(Run<?, ?> build) {
+        long duration = build.getDuration();
+        // If duration is 0 (build still running or not set), calculate from start time
+        if (duration == 0) {
+            long startTime = build.getStartTimeInMillis();
+            long currentTime = System.currentTimeMillis();
+            duration = currentTime - startTime;
+        }
+        return duration;
     }
 
     /**

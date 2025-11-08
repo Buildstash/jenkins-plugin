@@ -27,6 +27,7 @@ public class BuildstashUploadRequest {
     private String ciPipeline;
     private String ciRunId;
     private String ciRunUrl;
+    private String ciPipelineUrl;
     private String ciBuildDuration;
     private String vcHostType;
     private String vcHost;
@@ -85,6 +86,9 @@ public class BuildstashUploadRequest {
 
     public String getCiRunUrl() { return ciRunUrl; }
     public void setCiRunUrl(String ciRunUrl) { this.ciRunUrl = ciRunUrl; }
+
+    public String getCiPipelineUrl() { return ciPipelineUrl; }
+    public void setCiPipelineUrl(String ciPipelineUrl) { this.ciPipelineUrl = ciPipelineUrl; }
 
     public String getCiBuildDuration() { return ciBuildDuration; }
     public void setCiBuildDuration(String ciBuildDuration) { this.ciBuildDuration = ciBuildDuration; }
@@ -188,6 +192,9 @@ public class BuildstashUploadRequest {
         }
         if (ciRunUrl != null) {
             payload.put("ci_run_url", ciRunUrl);
+        }
+        if (ciPipelineUrl != null) {
+            payload.put("ci_pipeline_url", ciPipelineUrl);
         }
         if (ciBuildDuration != null) {
             payload.put("ci_build_duration", ciBuildDuration);
