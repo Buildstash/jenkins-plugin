@@ -109,6 +109,9 @@ public class BuildstashStepExecution extends SynchronousNonBlockingStepExecution
         listener.getLogger().println("Download URL: " + response.getDownloadUrl());
         listener.getLogger().println("Pending Processing: " + response.isPendingProcessing());
 
+        // Store results as build actions for later access (for UI display)
+        run.addAction(new BuildstashBuildAction(response));
+
         // Return response as Map so it can be used in pipeline scripts without whitelisting
         Map<String, Object> result = new HashMap<>();
         result.put("buildId", response.getBuildId());

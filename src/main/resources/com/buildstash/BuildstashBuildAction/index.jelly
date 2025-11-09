@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout" xmlns:f="/lib/form">
+    <l:layout title="Buildstash Upload Results" norefresh="true">
+        <l:main-panel>
+            <h1>Buildstash Upload Results</h1>
+            
+            <j:if test="${it.response != null}">
+                <div class="jenkins-section">
+                    <h2>Upload Information</h2>
+                    
+                    <table class="pane bigtable">
+                        <tr>
+                            <td class="pane-header">Build ID</td>
+                            <td class="pane">
+                                <j:if test="${it.buildId != null}">
+                                    <code>${it.buildId}</code>
+                                </j:if>
+                                <j:if test="${it.buildId == null}">
+                                    <span class="jenkins-form-label">N/A</span>
+                                </j:if>
+                            </td>
+                        </tr>
+                        
+                        <j:if test="${it.buildInfoUrl != null}">
+                            <tr>
+                                <td class="pane-header">Build Info URL</td>
+                                <td class="pane">
+                                    <a href="${it.buildInfoUrl}" target="_blank" rel="noopener noreferrer">
+                                        ${it.buildInfoUrl}
+                                    </a>
+                                </td>
+                            </tr>
+                        </j:if>
+                        
+                        <j:if test="${it.downloadUrl != null}">
+                            <tr>
+                                <td class="pane-header">Download URL</td>
+                                <td class="pane">
+                                    <a href="${it.downloadUrl}" target="_blank" rel="noopener noreferrer">
+                                        ${it.downloadUrl}
+                                    </a>
+                                </td>
+                            </tr>
+                        </j:if>
+                        
+                        <tr>
+                            <td class="pane-header">Pending Processing</td>
+                            <td class="pane">
+                                <j:choose>
+                                    <j:when test="${it.pendingProcessing == true}">
+                                        <code>true</code>
+                                        <p>Post-upload processing required for this build, there may be a short delay before it is available for download</p>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <code>false</code>
+                                        <p>Build available immediately, no further processing required.</p>
+                                    </j:otherwise>
+                                </j:choose>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </j:if>
+            
+            <j:if test="${it.response == null}">
+                <div class="jenkins-alert jenkins-alert-warning">
+                    <strong>Warning:</strong> No upload information available.
+                </div>
+            </j:if>
+        </l:main-panel>
+    </l:layout>
+</j:jelly>
+

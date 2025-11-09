@@ -33,11 +33,6 @@ public class BuildstashUploadService {
     private final HttpClient httpClient;
 
     public BuildstashUploadService(String apiKey, TaskListener listener) {
-        // Enable manual Content-Length header
-        // Note: Host header is automatically set by HTTP client from URI and cannot be set manually
-        // The system property must be set before HttpClient is created
-
-
         this.apiKey = apiKey;
         this.listener = listener;
         this.objectMapper = new ObjectMapper();
