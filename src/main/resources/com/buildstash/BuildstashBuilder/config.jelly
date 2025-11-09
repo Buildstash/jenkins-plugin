@@ -14,7 +14,7 @@
     </f:entry>
     
     <f:entry title="Expansion File Path" field="expansionFilePath" description="Optional path to expansion file, for example an Android .obb">
-        <f:textbox id="expansionFilePath" />
+        <f:textbox placeholder="optional/path/to/expansion.obb" />
     </f:entry>
     
     <f:entry title="Platform" field="platform" description="Platform identifier must match exactly">
