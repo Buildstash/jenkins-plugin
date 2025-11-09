@@ -300,4 +300,4 @@ This project is licensed under the [MIT License](LICENSE).
 - **Issues**: [GitHub Issues](https://github.com/jenkinsci/buildstash-plugin/issues)
 - **Support**: https://support.buildstash.com
 - **Documentation**: [Buildstash Platform Docs](https://support.buildstash.com/docs)
-- **Buildstash Website**: [Buildstash](https://buildstash.com)
+- **Buildstash Website**: [Buildstash.com](https://buildstash.com)
