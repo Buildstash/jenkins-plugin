@@ -63,6 +63,10 @@ public class BuildstashBuilder extends Publisher implements SimpleBuildStep {
             // Expand environment variables in all fields
             String expandedApiKey = expand(env, apiKey);
             String expandedStructure = expand(env, structure);
+            // Ensure structure defaults to "file" if not set
+            if (expandedStructure == null || expandedStructure.isBlank()) {
+                expandedStructure = "file";
+            }
             String expandedPrimaryFilePath = expand(env, primaryFilePath);
             String expandedExpansionFilePath = expand(env, expansionFilePath);
             String expandedVersionComponent1Major = expand(env, versionComponent1Major);

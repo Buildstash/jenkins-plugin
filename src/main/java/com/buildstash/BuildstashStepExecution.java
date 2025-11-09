@@ -59,6 +59,10 @@ public class BuildstashStepExecution extends SynchronousNonBlockingStepExecution
         // Expand environment variables in all fields
         String expandedApiKey = expand(env, step.getApiKey());
         String expandedStructure = expand(env, step.getStructure());
+        // Ensure structure defaults to "file" if not set
+        if (expandedStructure == null || expandedStructure.isBlank()) {
+            expandedStructure = "file";
+        }
         String expandedPrimaryFilePath = expand(env, step.getPrimaryFilePath());
         String expandedExpansionFilePath = expand(env, step.getExpansionFilePath());
         String expandedVersionComponent1Major = expand(env, step.getVersionComponent1Major());

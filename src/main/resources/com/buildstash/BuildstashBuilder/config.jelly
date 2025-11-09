@@ -2,7 +2,7 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:entry title="API Key" field="apiKey">
-        <f:password />
+        <f:password clazz="required" />
     </f:entry>
     
     <f:entry title="Structure" field="structure">
@@ -10,7 +10,7 @@
     </f:entry>
     
     <f:entry title="Primary File Path" field="primaryFilePath" description="Relative path to the primary build file for upload">
-        <f:textbox placeholder="path/to/example.apk" />
+        <f:textbox placeholder="path/to/example.apk" clazz="required" />
     </f:entry>
     
     <f:entry title="Expansion File Path" field="expansionFilePath" description="Optional path to expansion file, for example an Android .obb">
@@ -18,23 +18,23 @@
     </f:entry>
     
     <f:entry title="Platform" field="platform" description="Platform identifier must match exactly">
-        <f:textbox />
+        <f:textbox clazz="required" />
     </f:entry>
     
     <f:entry title="Stream" field="stream" description="Build stream to upload to. Must exactly match stream name">
-        <f:textbox />
+        <f:textbox clazz="required" />
     </f:entry>
     
     <f:entry title="Major Version" field="versionComponent1Major" description="Input each semantic version component independently for validation">
-        <f:number min="0" max="9999" />
+        <f:number min="0" max="9999" clazz="required" />
     </f:entry>
     
     <f:entry title="Minor Version" field="versionComponent2Minor">
-        <f:number min="0" max="9999" />
+        <f:number min="0" max="9999" clazz="required" />
     </f:entry>
     
     <f:entry title="Patch Version" field="versionComponent3Patch">
-        <f:number min="0" max="9999" />
+        <f:number min="0" max="9999" clazz="required" />
     </f:entry>
     
     <f:entry title="Extra Version" field="versionComponentExtra" description="Optional semantic version extra component">
