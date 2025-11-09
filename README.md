@@ -1,5 +1,7 @@
 # Buildstash
 
+<img src="https://media.buildstash.com/logos/promo1.png" alt="Buildstash - A new home for your software binaries" style="max-width: 600px; width: 100%;">
+
 A Jenkins plugin for uploading build artifacts to [Buildstash](https://buildstash.com) - for management and organization of binaries, sharing with your team and collaborators, and deployment. This plugin provides both Freestyle and Pipeline steps that can be used in Jenkins projects to upload files to Buildstash, supporting both direct file uploads and chunked uploads for large files.
 
 ## Features
@@ -131,11 +133,11 @@ After a successful upload, the build results will be displayed on the build page
 - Build ID
 - Build Info URL
 - Download URL
-- Processing status
+- Processing status (applies to iOS or Android builds which require additional processing on the server to make available for beta distribution)
 
 ### File + Expansion Upload
 
-For platforms that require both a primary file and an expansion file:
+You can optionally provide an additional expansion file for platforms that require it (e.g. Android):
 
 ```groovy
 pipeline {
@@ -148,13 +150,13 @@ pipeline {
                     buildstash(
                         apiKey: env.BUILDSTASH_API_KEY,
                         structure: 'file+expansion',
-                        primaryFilePath: 'build/app.aab',
-                        expansionFilePath: 'build/app-obb.zip',
+                        primaryFilePath: 'build/app.apk',
+                        expansionFilePath: 'build/app.obb',
                         versionComponent1Major: '1',
                         versionComponent2Minor: '0',
                         versionComponent3Patch: '0',
                         platform: 'android',
-                        stream: 'production'
+                        stream: 'nightlies'
                     )
                 }
             }
@@ -172,7 +174,7 @@ pipeline {
     agent any
     
     environment {
-        PLATFORM = 'ios'
+        PLATFORM = 'windows'
         STREAM = 'production'
     }
     
@@ -183,16 +185,12 @@ pipeline {
                     buildstash(
                         // Required parameters
                         apiKey: env.BUILDSTASH_API_KEY,
-                        primaryFilePath: "${env.WORKSPACE}/build/app.ipa",
+                        primaryFilePath: "${env.WORKSPACE}/build/app.exe",
                         versionComponent1Major: '2',
                         versionComponent2Minor: '5',
                         versionComponent3Patch: '1',
                         platform: env.PLATFORM,
                         stream: env.STREAM,
-                        
-                        // Optional structure and expansion
-                        structure: 'file+expansion',
-                        expansionFilePath: "${env.WORKSPACE}/build/app.obb",
                         
                         // Optional version components
                         versionComponentExtra: 'beta',
@@ -203,7 +201,7 @@ pipeline {
                         labels: 'production,release,signed',
                         architectures: 'arm64v8,armv9',
                         
-                        // Optional SCM fields (auto-detected if not provided)
+                        // Optional SCM fields (usually auto-detected if not provided)
                         vcHostType: 'git',
                         vcHost: 'github',
                         vcRepoName: 'my-awesome-app',
@@ -212,7 +210,7 @@ pipeline {
                         vcCommitSha: env.GIT_COMMIT ?: 'abc123def456',
                         vcCommitUrl: "https://github.com/user/my-awesome-app/commit/${env.GIT_COMMIT ?: 'abc123def456'}",
                         
-                        // Optional notes
+                        // Optional build notes
                         notes: "Built on ${env.NODE_NAME}"
                     )
                 }
@@ -222,7 +220,7 @@ pipeline {
 }
 ```
 
-**Note:** CI fields (`ciPipeline`, `ciRunId`, `ciRunUrl`, `ciPipelineUrl`, `ciBuildDuration`) are automatically populated from Jenkins context, so you don't need to pass them explicitly.
+**Note:** CI fields (`ciPipeline`, `ciPipelineUrl`, `ciRunId`, `ciRunUrl`, `ciBuildDuration`) are automatically populated from Jenkins context, so you don't need to pass them explicitly.
 
 ## Parameters
 
@@ -230,15 +228,15 @@ pipeline {
 
 ### Required Parameters
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
+| Parameter | Description | Example                                                 |
+|-----------|-------------|---------------------------------------------------------|
 | `apiKey` | Your Buildstash API key (use Jenkins Credentials with `withCredentials`) | `env.BUILDSTASH_API_KEY` (when using `withCredentials`) |
-| `primaryFilePath` | Path to the primary file to upload | `'build/app.ipa'` |
-| `versionComponent1Major` | Major version component | `'1'` |
-| `versionComponent2Minor` | Minor version component | `'0'` |
-| `versionComponent3Patch` | Patch version component | `'0'` |
-| `platform` | Target platform | `'ios'`, `'android'`, etc. |
-| `stream` | Build stream | `'development'`, `'production'`, etc. |
+| `primaryFilePath` | Path to the primary file to upload | `'build/app.dmg'`                                       |
+| `versionComponent1Major` | Major version component | `'1'`                                                   |
+| `versionComponent2Minor` | Minor version component | `'0'`                                                   |
+| `versionComponent3Patch` | Patch version component | `'0'`                                                   |
+| `platform` | Target platform | `'macos'`, `'android'`, etc.                            |
+| `stream` | Build stream | `'stable'`, `'nightlies'`, etc.                         |
 
 ### Optional Parameters
 
@@ -269,7 +267,7 @@ pipeline {
 The step provides the following outputs that can be accessed in subsequent pipeline steps:
 
 - `buildId`: The ID of the uploaded build
-- `pendingProcessing`: Whether the build is pending additional processing
+- `pendingProcessing`: Whether the build is pending additional processing before being available for download (for iOS or Android only, usually takes a few minutes)
 - `buildInfoUrl`: URL to view the build information on Buildstash
 - `downloadUrl`: URL to download the build
 
@@ -291,89 +289,19 @@ echo "Pending Processing: ${result.pendingProcessing}"
 
 ## Supported Platforms
 
-The plugin supports various platforms including:
-
-- **iOS**: `.ipa`, `.app` files
-- **Android**: `.apk`, `.aab` files
-- **macOS**: `.dmg`, `.pkg` files
-- **Windows**: `.exe`, `.msi` files
-- **Linux**: Various package formats
-- **Web**: Web application bundles
+Buildstash supports uploading and managing software binaries for a wide array of platforms. See a [full list of supported platforms in the Buildstash docs](https://docs.buildstash.com/data/platforms).
 
 ## File Size Limits
 
-- **Direct Upload**: Files up to 5GB
-- **Chunked Upload**: Files larger than 5GB (automatically handled)
-
-## Error Handling
-
-The plugin provides comprehensive error handling:
-
-- **File Not Found**: Validates that specified files exist before upload
-- **Network Errors**: Retries failed uploads with exponential backoff
-- **API Errors**: Detailed error messages from the Buildstash API
-- **Validation Errors**: Parameter validation with helpful error messages
-
-## Security
-
-- API keys are masked in Jenkins logs
-- HTTPS communication with Buildstash API
-- No sensitive data is stored in Jenkins
-
-## Development
-
-### Building
-
-```bash
-mvn clean package
-```
-
-### Testing
-
-```bash
-mvn test
-```
-
-### Running Tests with Jenkins
-
-```bash
-mvn hpi:run
-```
-
-### Code Style
-
-The project follows standard Java conventions and uses:
-
-- Java 11
-- Maven for build management
-- JUnit for testing
-- Jenkins plugin parent POM
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+File size limits for uploaded artifacts may vary by platform or your Buildstash plan. All platforms support at least 5GB, and some up to 150GB. See [buildstash.com/pricing](https://buildstash.com/pricing) for more info.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [MIT License](LICENSE).
 
-## Support
+## More info
 
-For support and questions:
-
-- **Documentation**: [Buildstash Documentation](https://docs.buildstash.com)
 - **Issues**: [GitHub Issues](https://github.com/jenkinsci/buildstash-plugin/issues)
-- **Email**: support@buildstash.com
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Support for direct and chunked file uploads
-- Pipeline step integration
-- Comprehensive metadata collection
-- Version control integration
+- **Support**: https://support.buildstash.com
+- **Documentation**: [Buildstash Platform Docs](https://support.buildstash.com/docs)
+- **Buildstash Website**: [Buildstash](https://buildstash.com)
