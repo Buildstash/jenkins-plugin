@@ -18,30 +18,30 @@
     </f:entry>
     
     <f:entry title="Platform" field="platform" description="Platform identifier must match exactly">
-        <f:textbox />
+        <f:textbox placeholder="android" />
     </f:entry>
     
     <f:entry title="Stream" field="stream" description="Build stream to upload to. Must exactly match stream name">
-        <f:textbox />
+        <f:textbox placeholder="default" />
     </f:entry>
     
-    <f:entry title="Major Version" field="versionComponent1Major" description="Input each semantic version component independently for validation">
+    <f:entry title="Version - Major" field="versionComponent1Major" description="Input each semantic version component independently for validation">
         <f:number min="0" max="9999" />
     </f:entry>
     
-    <f:entry title="Minor Version" field="versionComponent2Minor">
+    <f:entry title="Version - Minor" field="versionComponent2Minor">
         <f:number min="0" max="9999" />
     </f:entry>
     
-    <f:entry title="Patch Version" field="versionComponent3Patch">
+    <f:entry title="Version - Patch" field="versionComponent3Patch">
         <f:number min="0" max="9999" />
     </f:entry>
     
-    <f:entry title="Extra Version" field="versionComponentExtra" description="Optional semantic version extra component">
+    <f:entry title="Version - Extra" field="versionComponentExtra" description="Optional semantic version extra component">
         <f:textbox placeholder="alpha" />
     </f:entry>
     
-    <f:entry title="Meta Version" field="versionComponentMeta" description="Optional semantic version extra component">
+    <f:entry title="Version - Meta" field="versionComponentMeta" description="Optional semantic version extra component">
         <f:textbox placeholder="2025.12.01" />
     </f:entry>
     
@@ -61,7 +61,7 @@
         <f:advanced>
             <f:block>
                 <div style="margin: 10px 0; padding: 10px; border-left: 3px solid #4a90e2; border-radius: 3px; background-color: rgba(74, 144, 226, 0.1);">
-                    <strong>Note:</strong> In most cases the plugin will automatically detect and send SCM fields, but you can manually set these if needed.
+                    <strong>Note:</strong> In most cases the plugin will automatically detect SCM fields, but you can manually set these if needed.
                 </div>
             </f:block>
             
