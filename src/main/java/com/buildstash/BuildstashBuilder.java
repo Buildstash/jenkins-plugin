@@ -55,11 +55,8 @@ public class BuildstashBuilder extends Recorder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
+    public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         try {
-            // Get environment variables for expansion
-            EnvVars env = build.getEnvironment(listener);
-            
             // Expand environment variables in all fields
             String apiKeyPlain = apiKey != null ? Secret.toString(apiKey) : null;
             String expandedApiKey = expand(env, apiKeyPlain);

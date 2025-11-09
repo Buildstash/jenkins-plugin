@@ -7,7 +7,7 @@
             
             <j:if test="${it.response != null}">
                 <div class="jenkins-section">
-                    <h2>Upload Information</h2>
+                    <h2>Uploaded Build Artifacts</h2>
                     
                     <table class="pane bigtable">
                         <tr>
