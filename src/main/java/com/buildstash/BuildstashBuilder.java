@@ -9,16 +9,12 @@ import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Recorder;
 import hudson.util.Secret;
-import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import hudson.util.ListBoxModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Post-build action for uploading build artifacts to Buildstash.
@@ -59,42 +55,42 @@ public class BuildstashBuilder extends Recorder implements SimpleBuildStep {
         try {
             // Expand environment variables in all fields
             String apiKeyPlain = apiKey != null ? Secret.toString(apiKey) : null;
-            String expandedApiKey = expand(env, apiKeyPlain);
-            String expandedStructure = expand(env, structure);
+            String expandedApiKey = BuildstashUploadHelper.expand(env, apiKeyPlain);
+            String expandedStructure = BuildstashUploadHelper.expand(env, structure);
             // Ensure structure defaults to "file" if not set
             if (expandedStructure == null || expandedStructure.isBlank()) {
                 expandedStructure = "file";
             }
-            String expandedPrimaryFilePath = expand(env, primaryFilePath);
-            String expandedExpansionFilePath = expand(env, expansionFilePath);
-            String expandedVersionComponent1Major = expand(env, versionComponent1Major);
-            String expandedVersionComponent2Minor = expand(env, versionComponent2Minor);
-            String expandedVersionComponent3Patch = expand(env, versionComponent3Patch);
-            String expandedVersionComponentExtra = expand(env, versionComponentExtra);
-            String expandedVersionComponentMeta = expand(env, versionComponentMeta);
-            String expandedCustomBuildNumber = expand(env, customBuildNumber);
-            String expandedLabels = expand(env, labels);
-            String expandedArchitectures = expand(env, architectures);
-            String expandedPlatform = expand(env, platform);
-            String expandedStream = expand(env, stream);
-            String expandedNotes = expand(env, notes);
-            String expandedVcHostType = expand(env, vcHostType);
-            String expandedVcHost = expand(env, vcHost);
-            String expandedVcRepoName = expand(env, vcRepoName);
-            String expandedVcRepoUrl = expand(env, vcRepoUrl);
-            String expandedVcBranch = expand(env, vcBranch);
-            String expandedVcCommitSha = expand(env, vcCommitSha);
-            String expandedVcCommitUrl = expand(env, vcCommitUrl);
+            String expandedPrimaryFilePath = BuildstashUploadHelper.expand(env, primaryFilePath);
+            String expandedExpansionFilePath = BuildstashUploadHelper.expand(env, expansionFilePath);
+            String expandedVersionComponent1Major = BuildstashUploadHelper.expand(env, versionComponent1Major);
+            String expandedVersionComponent2Minor = BuildstashUploadHelper.expand(env, versionComponent2Minor);
+            String expandedVersionComponent3Patch = BuildstashUploadHelper.expand(env, versionComponent3Patch);
+            String expandedVersionComponentExtra = BuildstashUploadHelper.expand(env, versionComponentExtra);
+            String expandedVersionComponentMeta = BuildstashUploadHelper.expand(env, versionComponentMeta);
+            String expandedCustomBuildNumber = BuildstashUploadHelper.expand(env, customBuildNumber);
+            String expandedLabels = BuildstashUploadHelper.expand(env, labels);
+            String expandedArchitectures = BuildstashUploadHelper.expand(env, architectures);
+            String expandedPlatform = BuildstashUploadHelper.expand(env, platform);
+            String expandedStream = BuildstashUploadHelper.expand(env, stream);
+            String expandedNotes = BuildstashUploadHelper.expand(env, notes);
+            String expandedVcHostType = BuildstashUploadHelper.expand(env, vcHostType);
+            String expandedVcHost = BuildstashUploadHelper.expand(env, vcHost);
+            String expandedVcRepoName = BuildstashUploadHelper.expand(env, vcRepoName);
+            String expandedVcRepoUrl = BuildstashUploadHelper.expand(env, vcRepoUrl);
+            String expandedVcBranch = BuildstashUploadHelper.expand(env, vcBranch);
+            String expandedVcCommitSha = BuildstashUploadHelper.expand(env, vcCommitSha);
+            String expandedVcCommitUrl = BuildstashUploadHelper.expand(env, vcCommitUrl);
             
             // Validate required parameters with expanded values
-            validateParameters(expandedApiKey, expandedPrimaryFilePath, expandedVersionComponent1Major,
+            BuildstashUploadHelper.validateParameters(expandedApiKey, expandedPrimaryFilePath, expandedVersionComponent1Major,
                     expandedVersionComponent2Minor, expandedVersionComponent3Patch, expandedPlatform, expandedStream);
 
             // Create upload service
             BuildstashUploadService uploadService = new BuildstashUploadService(expandedApiKey, listener);
 
             // Prepare upload request with expanded values
-            BuildstashUploadRequest request = createUploadRequest(workspace, build, expandedStructure,
+            BuildstashUploadRequest request = BuildstashUploadHelper.createUploadRequest(workspace, build, expandedStructure,
                     expandedPrimaryFilePath, expandedExpansionFilePath, expandedVersionComponent1Major,
                     expandedVersionComponent2Minor, expandedVersionComponent3Patch, expandedVersionComponentExtra,
                     expandedVersionComponentMeta, expandedCustomBuildNumber, expandedLabels, expandedArchitectures,
@@ -105,11 +101,7 @@ public class BuildstashBuilder extends Recorder implements SimpleBuildStep {
             BuildstashUploadResponse response = uploadService.upload(request);
 
             // Log results
-            listener.getLogger().println("Buildstash upload completed successfully!");
-            listener.getLogger().println("Build ID: " + response.getBuildId());
-            listener.getLogger().println("Build Info URL: " + response.getBuildInfoUrl());
-            listener.getLogger().println("Download URL: " + response.getDownloadUrl());
-            listener.getLogger().println("Pending Processing: " + response.isPendingProcessing());
+            BuildstashUploadHelper.logResults(listener, response);
 
             // Store results as build actions for later access
             build.addAction(new BuildstashBuildAction(response));
@@ -121,187 +113,6 @@ public class BuildstashBuilder extends Recorder implements SimpleBuildStep {
         }
     }
 
-    private void validateParameters(String apiKey, String primaryFilePath, String versionComponent1Major,
-                                    String versionComponent2Minor, String versionComponent3Patch,
-                                    String platform, String stream) throws Exception {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalArgumentException("API key is required");
-        }
-
-        if (primaryFilePath == null || primaryFilePath.isBlank()) {
-            throw new IllegalArgumentException("Primary file path is required");
-        }
-
-        if (versionComponent1Major == null || versionComponent1Major.isBlank()) {
-            throw new IllegalArgumentException("Major version component is required");
-        }
-
-        if (versionComponent2Minor == null || versionComponent2Minor.isBlank()) {
-            throw new IllegalArgumentException("Minor version component is required");
-        }
-
-        if (versionComponent3Patch == null || versionComponent3Patch.isBlank()) {
-            throw new IllegalArgumentException("Patch version component is required");
-        }
-
-        if (platform == null || platform.isBlank()) {
-            throw new IllegalArgumentException("Platform is required");
-        }
-
-        if (stream == null || stream.isBlank()) {
-            throw new IllegalArgumentException("Stream is required");
-        }
-    }
-    
-    /**
-     * Expands environment variables in a string value.
-     * Returns null if input is null, otherwise expands variables like ${VAR_NAME}.
-     */
-    private String expand(EnvVars env, String value) {
-        if (value == null) {
-            return null;
-        }
-        return env.expand(value);
-    }
-
-    private BuildstashUploadRequest createUploadRequest(FilePath workspace, Run<?, ?> build,
-                                                         String structure, String primaryFilePath, String expansionFilePath,
-                                                         String versionComponent1Major, String versionComponent2Minor,
-                                                         String versionComponent3Patch, String versionComponentExtra,
-                                                         String versionComponentMeta, String customBuildNumber,
-                                                         String labels, String architectures, String platform,
-                                                         String stream, String notes, String vcHostType, String vcHost,
-                                                         String vcRepoName, String vcRepoUrl, String vcBranch,
-                                                         String vcCommitSha, String vcCommitUrl) throws IOException, InterruptedException {
-        BuildstashUploadRequest request = new BuildstashUploadRequest();
-
-        // Set basic properties (already expanded)
-        request.setStructure(structure);
-        request.setPrimaryFilePath(primaryFilePath);
-        request.setExpansionFilePath(expansionFilePath);
-        request.setVersionComponent1Major(versionComponent1Major);
-        request.setVersionComponent2Minor(versionComponent2Minor);
-        request.setVersionComponent3Patch(versionComponent3Patch);
-        request.setVersionComponentExtra(versionComponentExtra);
-        request.setVersionComponentMeta(versionComponentMeta);
-        request.setCustomBuildNumber(customBuildNumber);
-        request.setPlatform(platform);
-        request.setStream(stream);
-        request.setNotes(notes);
-
-        // Parse labels and architectures (comma-separated or newline-separated)
-        if (labels != null && !labels.isBlank()) {
-            List<String> labelsList = Arrays.stream(labels.split("[,\\r\\n]+"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-            request.setLabels(labelsList);
-        }
-
-        if (architectures != null && !architectures.isBlank()) {
-            List<String> architecturesList = Arrays.stream(architectures.split("[,\\r\\n]+"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-            request.setArchitectures(architecturesList);
-        }
-
-        // Set CI information automatically from Jenkins context
-        request.setCiPipeline(build.getParent().getDisplayName());
-        request.setCiRunId(String.valueOf(build.getNumber()));
-        request.setCiRunUrl(getBuildUrl(build));
-        request.setCiPipelineUrl(getProjectUrl(build));
-        request.setCiBuildDuration(formatBuildDuration(getBuildDuration(build)));
-        request.setSource("jenkins");
-
-        // Set version control information (manual values first, already expanded)
-        request.setVcHostType(vcHostType);
-        request.setVcHost(vcHost);
-        request.setVcRepoName(vcRepoName);
-        request.setVcRepoUrl(vcRepoUrl);
-        request.setVcBranch(vcBranch);
-        request.setVcCommitSha(vcCommitSha);
-        request.setVcCommitUrl(vcCommitUrl);
-
-        // Auto-detect and populate any missing VC fields from Jenkins
-        VersionControlDetector.populateVersionControlInfo(build, request);
-
-        // Set workspace for file operations
-        request.setWorkspace(workspace);
-
-        return request;
-    }
-
-    /**
-     * Gets the full URL to the build run status summary.
-     */
-    private String getBuildUrl(Run<?, ?> build) {
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins != null) {
-            String rootUrl = jenkins.getRootUrl();
-            if (rootUrl != null && !rootUrl.isEmpty()) {
-                // Remove trailing slash from root URL if present
-                String baseUrl = rootUrl.endsWith("/") ? rootUrl.substring(0, rootUrl.length() - 1) : rootUrl;
-                String buildPath = build.getUrl();
-                // Ensure build path starts with / if it doesn't already
-                if (!buildPath.startsWith("/")) {
-                    buildPath = "/" + buildPath;
-                }
-                return baseUrl + buildPath;
-            }
-        }
-        // Fallback to relative URL if root URL is not available
-        return build.getUrl();
-    }
-
-    /**
-     * Gets the full URL to the Jenkins project/job root.
-     */
-    private String getProjectUrl(Run<?, ?> build) {
-        Jenkins jenkins = Jenkins.getInstanceOrNull();
-        if (jenkins != null) {
-            String rootUrl = jenkins.getRootUrl();
-            if (rootUrl != null && !rootUrl.isEmpty()) {
-                // Remove trailing slash from root URL if present
-                String baseUrl = rootUrl.endsWith("/") ? rootUrl.substring(0, rootUrl.length() - 1) : rootUrl;
-                String projectPath = build.getParent().getUrl();
-                // Ensure project path starts with / if it doesn't already
-                if (!projectPath.startsWith("/")) {
-                    projectPath = "/" + projectPath;
-                }
-                return baseUrl + projectPath;
-            }
-        }
-        // Fallback to relative URL if root URL is not available
-        return build.getParent().getUrl();
-    }
-
-    /**
-     * Gets the build duration in milliseconds.
-     * If the build is still running or duration is 0, calculates duration from start time to now.
-     * If the build is completed with a valid duration, returns that duration.
-     */
-    private long getBuildDuration(Run<?, ?> build) {
-        long duration = build.getDuration();
-        // If duration is 0 (build still running or not set), calculate from start time
-        if (duration == 0) {
-            long startTime = build.getStartTimeInMillis();
-            long currentTime = System.currentTimeMillis();
-            duration = currentTime - startTime;
-        }
-        return duration;
-    }
-
-    /**
-     * Formats build duration in milliseconds to HH:mm:ss format.
-     */
-    private String formatBuildDuration(long durationMs) {
-        long totalSeconds = durationMs / 1000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
 
     // Getters and Setters
     public Secret getApiKey() { return apiKey; }
