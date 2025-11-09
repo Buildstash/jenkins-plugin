@@ -143,17 +143,7 @@ public class BuildstashUploadHelper {
     public static String getBuildUrl(Run<?, ?> build) {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins != null) {
-            String rootUrl = jenkins.getRootUrl();
-            if (rootUrl != null && !rootUrl.isEmpty()) {
-                // Remove trailing slash from root URL if present
-                String baseUrl = rootUrl.endsWith("/") ? rootUrl.substring(0, rootUrl.length() - 1) : rootUrl;
-                String buildPath = build.getUrl();
-                // Ensure build path starts with / if it doesn't already
-                if (!buildPath.startsWith("/")) {
-                    buildPath = "/" + buildPath;
-                }
-                return baseUrl + buildPath;
-            }
+            return jenkins.getRootUrl() + build.getUrl();
         }
         // Fallback to relative URL if root URL is not available
         return build.getUrl();
@@ -165,17 +155,7 @@ public class BuildstashUploadHelper {
     public static String getProjectUrl(Run<?, ?> build) {
         Jenkins jenkins = Jenkins.getInstanceOrNull();
         if (jenkins != null) {
-            String rootUrl = jenkins.getRootUrl();
-            if (rootUrl != null && !rootUrl.isEmpty()) {
-                // Remove trailing slash from root URL if present
-                String baseUrl = rootUrl.endsWith("/") ? rootUrl.substring(0, rootUrl.length() - 1) : rootUrl;
-                String projectPath = build.getParent().getUrl();
-                // Ensure project path starts with / if it doesn't already
-                if (!projectPath.startsWith("/")) {
-                    projectPath = "/" + projectPath;
-                }
-                return baseUrl + projectPath;
-            }
+            return jenkins.getRootUrl() + build.getParent().getUrl();
         }
         // Fallback to relative URL if root URL is not available
         return build.getParent().getUrl();
