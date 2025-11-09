@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>5.28</version>
+        <version>5.27</version>
         <relativePath />
     </parent>
     <groupId>io.jenkins.plugins</groupId>
@@ -16,10 +16,11 @@
     <url>https://github.com/jenkinsci/buildstash-plugin</url>
 
     <properties>
-        <jenkins.version>2.479.3</jenkins.version>
-        <java.level>17</java.level>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <jenkins.baseline>2.479</jenkins.baseline>
+        <jenkins.version>${jenkins.baseline}.3</jenkins.version>
+        <jenkins.pluginName>Buildstash</jenkins.pluginName>
+        <jenkins.pluginDescription>Allows uploading build artifacts to Buildstash, for management and organization of binaries, sharing with your team and collaborators, and deployment. Uploaded binaries are output to your Jenkins workflow for use in future steps.</jenkins.pluginDescription>
+        <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
     </properties>
 
     <licenses>
@@ -33,7 +34,7 @@
         <connection>scm:git:https://github.com/jenkinsci/buildstash-plugin.git</connection>
         <developerConnection>scm:git:https://github.com:jenkinsci/buildstash-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/buildstash-plugin</url>
-        <tag>HEAD</tag>
+        <tag>${scmTag}</tag>
     </scm>
 
     <repositories>
@@ -49,56 +50,60 @@
         </pluginRepository>
     </pluginRepositories>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.jenkins.tools.bom</groupId>
+                <artifactId>bom-${jenkins.baseline}.x</artifactId>
+                <version>5054.v620b_5d2b_d5e6</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-        <!-- Jenkins Plugin Dependencies -->
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>credentials</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>plain-credentials</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-step-api</artifactId>
-            <version>639.v6eca_cd8c04a_a_</version>
         </dependency>
-        
-
-        <!-- HTTP Client Dependencies - Using built-in java.net.http.HttpClient (Java 11+) -->
-
-        <!-- JSON Processing -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
-            <version>2.20.1-423.v13951f6b_6532</version>
         </dependency>
-
-        <!-- Testing -->
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-cps</artifactId>
-            <version>2.94</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-job</artifactId>
-            <version>2.40</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-basic-steps</artifactId>
-            <version>2.23</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins.workflow</groupId>
             <artifactId>workflow-durable-task-step</artifactId>
-            <version>2.35</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jenkinsci.plugins</groupId>
             <artifactId>pipeline-model-definition</artifactId>
-            <version>1.8.4</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
     <build>
