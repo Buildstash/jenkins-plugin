@@ -16,7 +16,7 @@ public class BuildstashBuildAction implements Action {
 
     @Override
     public String getIconFileName() {
-        return "package.png";
+        return "symbol-cube";
     }
 
     @Override
