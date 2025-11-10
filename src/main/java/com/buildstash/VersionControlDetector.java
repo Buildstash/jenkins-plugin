@@ -85,8 +85,9 @@ public class VersionControlDetector {
             if (isEmpty(request.getVcCommitUrl())) {
                 String finalCommitSha = request.getVcCommitSha();
                 String finalRepoUrl = request.getVcRepoUrl();
+                String finalHostType = request.getVcHostType();
                 if (finalCommitSha != null && finalRepoUrl != null) {
-                    String commitUrl = generateCommitUrl(finalRepoUrl, finalCommitSha);
+                    String commitUrl = generateCommitUrl(finalRepoUrl, finalCommitSha, finalHostType);
                     if (commitUrl != null) {
                         request.setVcCommitUrl(commitUrl);
                     }
@@ -119,7 +120,7 @@ public class VersionControlDetector {
             
             // First, check all actions to find BuildData (works even if Class.forName fails)
             try {
-                java.util.Collection<?> actions = build.getActions();
+                java.util.Collection<?> actions = build.getAllActions();
                 // Look for BuildData by checking class name (more reliable than Class.forName)
                 for (Object action : actions) {
                     if (action != null) {
@@ -283,8 +284,9 @@ public class VersionControlDetector {
             if (isEmpty(request.getVcCommitUrl())) {
                 String finalCommitSha = request.getVcCommitSha();
                 String finalRepoUrl = request.getVcRepoUrl();
+                String finalHostType = request.getVcHostType();
                 if (finalCommitSha != null && finalRepoUrl != null) {
-                    String commitUrl = generateCommitUrl(finalRepoUrl, finalCommitSha);
+                    String commitUrl = generateCommitUrl(finalRepoUrl, finalCommitSha, finalHostType);
                     if (commitUrl != null) {
                         request.setVcCommitUrl(commitUrl);
                     }
@@ -383,6 +385,65 @@ public class VersionControlDetector {
                             String depot = (String) getDepot.invoke(scm);
                             if (depot != null && !depot.isBlank()) {
                                 return depot;
+                            }
+                        } catch (Exception e2) {
+                            // Ignore
+                        }
+                    }
+                } catch (Exception e) {
+                    // Ignore
+                }
+            } else if (scmClass.contains("SubversionSCM") || scmClass.contains("SVN")) {
+                // Try to get SVN remote URL
+                try {
+                    // Try getLocations() or getModules() method
+                    try {
+                        java.lang.reflect.Method getLocations = scm.getClass().getMethod("getLocations");
+                        Object locations = getLocations.invoke(scm);
+                        if (locations instanceof Collection) {
+                            Collection<?> collection = (Collection<?>) locations;
+                            if (!collection.isEmpty()) {
+                                Object location = collection.iterator().next();
+                                // Try getRemote() or getURL() method
+                                try {
+                                    java.lang.reflect.Method getRemote = location.getClass().getMethod("getRemote");
+                                    String url = (String) getRemote.invoke(location);
+                                    if (url != null && !url.isBlank()) {
+                                        return url;
+                                    }
+                                } catch (Exception e) {
+                                    try {
+                                        java.lang.reflect.Method getURL = location.getClass().getMethod("getURL");
+                                        String url = (String) getURL.invoke(location);
+                                        if (url != null && !url.isBlank()) {
+                                            return url;
+                                        }
+                                    } catch (Exception e2) {
+                                        // Ignore
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Try alternative: getModules()
+                        try {
+                            java.lang.reflect.Method getModules = scm.getClass().getMethod("getModules");
+                            Object modules = getModules.invoke(scm);
+                            if (modules instanceof Collection) {
+                                Collection<?> collection = (Collection<?>) modules;
+                                if (!collection.isEmpty()) {
+                                    Object module = collection.iterator().next();
+                                    // Try getURL() or getRemote()
+                                    try {
+                                        java.lang.reflect.Method getURL = module.getClass().getMethod("getURL");
+                                        String url = (String) getURL.invoke(module);
+                                        if (url != null && !url.isBlank()) {
+                                            return url;
+                                        }
+                                    } catch (Exception e2) {
+                                        // Ignore
+                                    }
+                                }
                             }
                         } catch (Exception e2) {
                             // Ignore
@@ -787,16 +848,29 @@ public class VersionControlDetector {
             // Ignore - Git plugin might not be available
         }
 
-        // Method 2: Try to get from change sets
+        // Method 2: Try to get from change sets (works for Git, SVN, etc.)
         try {
             java.lang.reflect.Method getChangeSetMethod = build.getClass().getMethod("getChangeSet");
             ChangeLogSet<?> changeSet = (ChangeLogSet<?>) getChangeSetMethod.invoke(build);
             if (changeSet != null && !changeSet.isEmptySet()) {
                 ChangeLogSet.Entry entry = changeSet.iterator().next();
                 if (entry != null) {
-                    String commitId = entry.getCommitId();
-                    if (commitId != null && !commitId.isBlank()) {
-                        return commitId;
+                    // For SVN, try getRevision() first
+                    try {
+                        java.lang.reflect.Method getRevision = entry.getClass().getMethod("getRevision");
+                        Object revisionObj = getRevision.invoke(entry);
+                        if (revisionObj != null) {
+                            String revision = revisionObj.toString();
+                            if (revision != null && !revision.isBlank()) {
+                                return revision;
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Not SVN, try getCommitId() for Git
+                        String commitId = entry.getCommitId();
+                        if (commitId != null && !commitId.isBlank()) {
+                            return commitId;
+                        }
                     }
                 }
             }
@@ -806,7 +880,7 @@ public class VersionControlDetector {
 
         // Method 3: Try to get from all actions (look for BuildData in all actions)
         try {
-            java.util.Collection<?> actions = build.getActions();
+            java.util.Collection<?> actions = build.getAllActions();
             for (Object action : actions) {
                 if (action != null && action.getClass().getName().contains("BuildData")) {
                     try {
@@ -873,33 +947,9 @@ public class VersionControlDetector {
     }
 
     /**
-     * Generates a Perforce changelist URL.
-     * Note: Perforce doesn't have a standard web URL format, but if Swarm is available,
-     * the URL format might be: http://swarm-server/changes/CHANGELIST
+     * Generates a commit URL from repository URL, commit SHA, and host type.
      */
-    private static String generatePerforceChangelistUrl(String p4Port, String changelist) {
-        if (p4Port == null || changelist == null) {
-            return null;
-        }
-        
-        // Try to detect if Swarm is available from the port
-        // Swarm URLs are typically: http://swarm-server/changes/CHANGELIST
-        // But we can't reliably detect this without more info
-        
-        // For now, return a Perforce URL format: perforce://server/changes/CHANGELIST
-        // This is a best-effort URL that may not be clickable but provides info
-        String server = p4Port.replaceAll("^perforce://", "").replaceAll(":.*$", "");
-        if (!server.isEmpty()) {
-            return "perforce://" + server + "/changes/" + changelist;
-        }
-        
-        return null;
-    }
-
-    /**
-     * Generates a commit URL from repository URL and commit SHA.
-     */
-    private static String generateCommitUrl(String repoUrl, String commitSha) {
+    private static String generateCommitUrl(String repoUrl, String commitSha, String hostType) {
         if (repoUrl == null || commitSha == null) {
             return null;
         }
@@ -911,6 +961,20 @@ public class VersionControlDetector {
             // Generate commit URL based on host type
             String host = detectHostFromUrl(repoUrl);
             if (host == null) {
+                // If we can't detect host from URL, but we have a host type, use that
+                // This helps with SVN where the URL might not contain obvious host indicators
+                if (hostType != null && !hostType.isBlank()) {
+                    if ("svn".equals(hostType)) {
+                        // For SVN, check if commit SHA is numeric (revision number)
+                        if (commitSha.matches("^\\d+$")) {
+                            // Generic SVN revision URL format (varies by host, but common pattern)
+                            // Most SVN web interfaces use /revision/{revision} or /r/{revision}
+                            // Since we don't know the exact format, return null for now
+                            // SourceForge SVN is handled separately below
+                            return null;
+                        }
+                    }
+                }
                 return null;
             }
 
@@ -936,9 +1000,33 @@ public class VersionControlDetector {
                 // Note: The commit URL includes the repo name again in the path
                 // Format: baseUrl/commit/COMMIT-SHA (baseUrl already includes /_git/REPO-NAME)
                 return baseUrl + "/commit/" + commitSha;
+            } else if ("gitee".equals(host)) {
+                // Gitee: https://gitee.com/user/repo/commit/abc123
+                return baseUrl + "/commit/" + commitSha;
+            } else if ("sourceforge".equals(host)) {
+                // SourceForge Git: https://sourceforge.net/p/project/code/ci/{commitSha}/
+                // SourceForge SVN: https://sourceforge.net/p/project/code/{revision}/
+                // Check if it's a numeric revision (SVN) or hex SHA (Git)
+                if (commitSha.matches("^\\d+$")) {
+                    // SVN revision (numeric)
+                    return baseUrl + "/" + commitSha + "/";
+                } else {
+                    // Git commit SHA (hex)
+                    return baseUrl + "/ci/" + commitSha + "/";
+                }
+            } else if ("svn".equals(hostType) || (host != null && host.contains("svn"))) {
+                // Generic SVN revision URL (for non-SourceForge SVN repositories)
+                // SVN revision numbers are numeric
+                if (commitSha.matches("^\\d+$")) {
+                    // Common SVN web interface patterns (varies by host)
+                    // Try /revision/{revision} first, but many hosts use different formats
+                    // Since we can't reliably determine the format, return null
+                    // Users can manually specify vcCommitUrl if needed
+                    return null;
+                }
             } else if ("perforce".equals(host)) {
-                // Perforce: changelist URLs are handled separately in generatePerforceChangelistUrl
-                // For standard Perforce, we can't generate a web URL without Swarm
+                // Perforce: changelist URLs vary by installation (Swarm, P4Web, etc.)
+                // We can't reliably generate a web URL without knowing the specific setup
                 // Return null to indicate we can't generate a URL
                 return null;
             }
