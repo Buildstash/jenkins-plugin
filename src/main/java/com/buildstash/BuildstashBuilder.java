@@ -7,6 +7,7 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Recorder;
 import hudson.tasks.Publisher;
 import hudson.util.Secret;
 import jenkins.tasks.SimpleBuildStep;
@@ -20,7 +21,7 @@ import java.io.IOException;
  * Post-build action for uploading build artifacts to Buildstash.
  * This allows the Buildstash upload functionality to be used as a post-build action in classic Jenkins projects.
  */
-public class BuildstashBuilder extends Publisher implements SimpleBuildStep {
+public class BuildstashBuilder extends Recorder implements SimpleBuildStep {
 
     private Secret apiKey;
     private String structure = "file";
